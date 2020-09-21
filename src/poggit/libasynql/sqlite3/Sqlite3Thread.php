@@ -150,4 +150,9 @@ class Sqlite3Thread extends SqlSlaveThread{
 	public function getThreadName() : string{
 		return __NAMESPACE__ . " connector #$this->slaveNumber";
 	}
+
+    public function join()
+    {
+        // TODO: Implement join() method.
+    }
 }

@@ -85,9 +85,7 @@ while(isset($argv[$i]) && strpos($argv[$i], "--") === 0){
 		continue;
 	}
 	if($argv[$i] === "--sql"){
-		$sqlFiles = array_map(function(SplFileInfo $file){
-			return $file->getPathname();
-		}, iterator_to_array(new RegexIterator(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($argv[$i + 1])), '/\.sql$/')));
+		$sqlFiles = array_map(fn(SplFileInfo $file) => $file->getPathname(), iterator_to_array(new RegexIterator(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($argv[$i + 1])), '/\.sql$/')));
 		$i += 2;
 		continue;
 	}

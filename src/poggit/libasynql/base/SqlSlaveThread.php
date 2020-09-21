@@ -26,7 +26,7 @@ use ClassLoader;
 use InvalidArgumentException;
 use pocketmine\Server;
 use pocketmine\snooze\SleeperNotifier;
-use pocketmine\Thread;
+use pocketmine\thread\Thread;
 use poggit\libasynql\libasynql;
 use poggit\libasynql\SqlError;
 use poggit\libasynql\SqlResult;
@@ -64,7 +64,7 @@ abstract class SqlSlaveThread extends Thread implements SqlThread{
 		$this->start(PTHREADS_INHERIT_INI | PTHREADS_INHERIT_CONSTANTS);
 	}
 
-	public function run() : void{
+	public function onRun() : void{
 		$this->registerClassLoader();
 		$error = $this->createConn($resource);
 		$this->connCreated = true;
@@ -106,7 +106,7 @@ abstract class SqlSlaveThread extends Thread implements SqlThread{
 		parent::quit();
 	}
 
-	public function quit(){
+	public function quit(): void{
 		$this->stopRunning();
 	}
 
