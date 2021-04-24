@@ -26,7 +26,7 @@ namespace poggit\libasynql\mysqli;
  * Result field types returned by MySQL
  * @see https://dev.mysql.com/doc/internals/en/com-query-response.html#column-type
  */
-interface MysqlTypes{
+interface MysqlTypes {
 	public const DECIMAL = 0x00;
 	public const TINY = 0x01;
 	public const SHORT = 0x02;

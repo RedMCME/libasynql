@@ -38,7 +38,9 @@ use function mb_substr;
 use function str_replace;
 use function uksort;
 
-abstract class GenericStatementImpl implements GenericStatement, JsonSerializable{
+abstract class GenericStatementImpl implements
+	GenericStatement,
+	JsonSerializable {
 	/** @var string */
 	protected $name;
 	/** @var string */
@@ -55,27 +57,27 @@ abstract class GenericStatementImpl implements GenericStatement, JsonSerializabl
 	/** @var string[] */
 	protected $varPositions = [];
 
-	public function getName() : string{
+	public function getName(): string {
 		return $this->name;
 	}
 
-	public function getQuery() : string{
+	public function getQuery(): string {
 		return $this->query;
 	}
 
-	public function getDoc() : string{
+	public function getDoc(): string {
 		return $this->doc;
 	}
 
-	public function getVariables() : array{
+	public function getVariables(): array {
 		return $this->variables;
 	}
 
-	public function getFile() : ?string{
+	public function getFile(): ?string {
 		return $this->file;
 	}
 
-	public function getLineNumber() : int{
+	public function getLineNumber(): int {
 		return $this->lineNo;
 	}
 
@@ -89,28 +91,43 @@ abstract class GenericStatementImpl implements GenericStatement, JsonSerializabl
 	 * @param int               $lineNo
 	 * @return GenericStatementImpl
 	 */
-	public static function forDialect(string $dialect, string $name, string $query, string $doc, array $variables, ?string $file, int $lineNo) : GenericStatementImpl{
+	public static function forDialect(
+		string $dialect,
+		string $name,
+		string $query,
+		string $doc,
+		array $variables,
+		?string $file,
+		int $lineNo
+	): GenericStatementImpl {
 		static $classMap = [
 			SqlDialect::MYSQL => MysqlStatementImpl::class,
-			SqlDialect::SQLITE => SqliteStatementImpl::class,
+			SqlDialect::SQLITE => SqliteStatementImpl::class
 		];
 		$className = $classMap[$dialect];
 		return new $className($name, $query, $doc, $variables, $file, $lineNo);
 	}
 
-	public function __construct(string $name, string $query, string $doc, array $variables, ?string $file, int $lineNo){
+	public function __construct(
+		string $name,
+		string $query,
+		string $doc,
+		array $variables,
+		?string $file,
+		int $lineNo
+	) {
 		$this->name = $name;
 		$this->query = $query;
 		$this->doc = $doc;
 		$this->variables = $variables;
-		$this->file = str_replace("\\", "/", $file);
+		$this->file = str_replace('\\', '/', $file);
 		$this->lineNo = $lineNo;
 
 		$this->compilePositions();
 	}
 
-	protected function compilePositions() : void{
-		uksort($this->variables, function($s1, $s2){
+	protected function compilePositions(): void {
+		uksort($this->variables, function ($s1, $s2) {
 			return mb_strlen($s2) <=> mb_strlen($s1);
 		});
 
@@ -118,46 +135,53 @@ abstract class GenericStatementImpl implements GenericStatement, JsonSerializabl
 
 		$positions = [];
 		$quotesState = null;
-		for($i = 1, $iMax = mb_strlen($this->query); $i < $iMax; ++$i){
+		for ($i = 1, $iMax = mb_strlen($this->query); $i < $iMax; ++$i) {
 			$thisChar = mb_substr($this->query, $i, 1);
 
-			if($quotesState !== null){
-				if($thisChar === "\\"){
+			if ($quotesState !== null) {
+				if ($thisChar === '\\') {
 					++$i; // skip one character
 					continue;
 				}
-				if($thisChar === $quotesState){
+				if ($thisChar === $quotesState) {
 					$quotesState = null;
 					continue;
 				}
 				continue;
 			}
-			if(in_array($thisChar, ["'", "\"", "`"], true)){
+			if (in_array($thisChar, ["'", "\"", '`'], true)) {
 				$quotesState = $thisChar;
 				continue;
 			}
 
-			if($thisChar === ":"){
+			if ($thisChar === ':') {
 				$name = null;
 
-				foreach($this->variables as $variable){
-					if(mb_strpos($this->query, $variable->getName(), $i + 1) === $i + 1){
+				foreach ($this->variables as $variable) {
+					if (
+						mb_strpos(
+							$this->query,
+							$variable->getName(),
+							$i + 1
+						) ===
+						$i + 1
+					) {
 						$positions[$i] = $name = $variable->getName();
 						break;
 						// if multiple variables match, the first one i.e. the longest one wins
 					}
 				}
 
-				if($name !== null){
+				if ($name !== null) {
 					$usedNames[$name] = true;
 					$i += mb_strlen($name); // skip the name
 				}
 			}
 		}
 
-		$newQuery = "";
+		$newQuery = '';
 		$lastPos = 0;
-		foreach($positions as $pos => $name){
+		foreach ($positions as $pos => $name) {
 			$newQuery .= mb_substr($this->query, $lastPos, $pos - $lastPos);
 			$this->varPositions[mb_strlen($newQuery)] = $name; // we aren't using $pos here, because we want the position in the cleaned string, not the position in the original query string
 			$lastPos = $pos + mb_strlen($name) + 1;
@@ -166,31 +190,55 @@ abstract class GenericStatementImpl implements GenericStatement, JsonSerializabl
 
 		$this->query = $newQuery;
 
-		foreach($this->variables as $variable){
-			if(!isset($usedNames[$variable->getName()])){
-				throw new InvalidArgumentException("The variable {$variable->getName()} is not used anywhere in the query! Check for typos.");
+		foreach ($this->variables as $variable) {
+			if (!isset($usedNames[$variable->getName()])) {
+				throw new InvalidArgumentException(
+					"The variable {$variable->getName()} is not used anywhere in the query! Check for typos."
+				);
 			}
 		}
 	}
 
-	public function format(array $vars, ?string $placeHolder, ?array &$outArgs) : string{
+	public function format(
+		array $vars,
+		?string $placeHolder,
+		?array &$outArgs
+	): string {
 		$outArgs = [];
-		foreach($this->variables as $variable){
-			if(!$variable->isOptional() && !array_key_exists($variable->getName(), $vars)){
-				throw new InvalidArgumentException("Missing required variable {$variable->getName()}");
+		foreach ($this->variables as $variable) {
+			if (
+				!$variable->isOptional() &&
+				!array_key_exists($variable->getName(), $vars)
+			) {
+				throw new InvalidArgumentException(
+					"Missing required variable {$variable->getName()}"
+				);
 			}
 		}
 
-		$query = "";
+		$query = '';
 
 		$lastPos = 0;
-		foreach($this->varPositions as $pos => $name){
+		foreach ($this->varPositions as $pos => $name) {
 			$query .= mb_substr($this->query, $lastPos, $pos - $lastPos);
 			$value = $vars[$name] ?? $this->variables[$name]->getDefault();
-			try{
-				$query .= $this->formatVariable($this->variables[$name], $value, $placeHolder, $outArgs);
-			}catch(AssertionError $e){
-				throw new InvalidArgumentException("Invalid value for :$name - " . $e->getMessage() . ",  " . self::getType($value) . " given", 0, $e);
+			try {
+				$query .= $this->formatVariable(
+					$this->variables[$name],
+					$value,
+					$placeHolder,
+					$outArgs
+				);
+			} catch (AssertionError $e) {
+				throw new InvalidArgumentException(
+					"Invalid value for :$name - " .
+						$e->getMessage() .
+						',  ' .
+						self::getType($value) .
+						' given',
+					0,
+					$e
+				);
 			}
 			$lastPos = $pos;
 		}
@@ -199,20 +247,25 @@ abstract class GenericStatementImpl implements GenericStatement, JsonSerializabl
 		return $query;
 	}
 
-	private static function getType($value){
+	private static function getType($value) {
 		return is_object($value) ? get_class($value) : gettype($value);
 	}
 
-	protected abstract function formatVariable(GenericVariable $variable, $value, ?string $placeHolder, array &$outArgs) : string;
+	abstract protected function formatVariable(
+		GenericVariable $variable,
+		$value,
+		?string $placeHolder,
+		array &$outArgs
+	): string;
 
-	public function jsonSerialize(){
+	public function jsonSerialize() {
 		return [
-			"name" => $this->name,
-			"query" => $this->query,
-			"doc" => $this->doc,
-			"variables" => $this->variables,
-			"file" => $this->file,
-			"lineNo" => $this->lineNo,
+			'name' => $this->name,
+			'query' => $this->query,
+			'doc' => $this->doc,
+			'variables' => $this->variables,
+			'file' => $this->file,
+			'lineNo' => $this->lineNo
 		];
 	}
 }

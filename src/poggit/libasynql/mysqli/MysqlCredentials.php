@@ -28,7 +28,7 @@ use poggit\libasynql\ConfigException;
 use poggit\libasynql\SqlError;
 use function strlen;
 
-class MysqlCredentials implements JsonSerializable{
+class MysqlCredentials implements JsonSerializable {
 	/** @var string $host */
 	private $host;
 	/** @var string $username */
@@ -58,12 +58,23 @@ class MysqlCredentials implements JsonSerializable{
 	 * @return MysqlCredentials
 	 * @throws ConfigException If <code>schema</code> is missing and <code>$defaultSchema</code> is null/not passed
 	 */
-	public static function fromArray(array $array, ?string $defaultSchema = null) : MysqlCredentials{
-		if(!isset($defaultSchema, $array["schema"])){
-			throw new ConfigException("The attribute \"schema\" is missing in the MySQL settings");
+	public static function fromArray(
+		array $array,
+		?string $defaultSchema = null
+	): MysqlCredentials {
+		if (!isset($defaultSchema, $array['schema'])) {
+			throw new ConfigException(
+				"The attribute \"schema\" is missing in the MySQL settings"
+			);
 		}
-		return new MysqlCredentials($array["host"] ?? "127.0.0.1", $array["username"] ?? "root",
-			$array["password"] ?? "", $array["schema"] ?? $defaultSchema, $array["port"] ?? 3306, $array["socket"] ?? "");
+		return new MysqlCredentials(
+			$array['host'] ?? '127.0.0.1',
+			$array['username'] ?? 'root',
+			$array['password'] ?? '',
+			$array['schema'] ?? $defaultSchema,
+			$array['port'] ?? 3306,
+			$array['socket'] ?? ''
+		);
 	}
 
 	/**
@@ -76,7 +87,14 @@ class MysqlCredentials implements JsonSerializable{
 	 * @param int    $port
 	 * @param string $socket
 	 */
-	public function __construct(string $host, string $username, string $password, string $schema, int $port = 3306, string $socket = ""){
+	public function __construct(
+		string $host,
+		string $username,
+		string $password,
+		string $schema,
+		int $port = 3306,
+		string $socket = ''
+	) {
 		$this->host = $host;
 		$this->username = $username;
 		$this->password = $password;
@@ -92,9 +110,16 @@ class MysqlCredentials implements JsonSerializable{
 	 *
 	 * @throws SqlError
 	 */
-	public function newMysqli() : mysqli{
-		$mysqli = @new mysqli($this->host, $this->username, $this->password, $this->schema, $this->port, $this->socket);
-		if($mysqli->connect_error){
+	public function newMysqli(): mysqli {
+		$mysqli = @new mysqli(
+			$this->host,
+			$this->username,
+			$this->password,
+			$this->schema,
+			$this->port,
+			$this->socket
+		);
+		if ($mysqli->connect_error) {
 			throw new SqlError(SqlError::STAGE_CONNECT, $mysqli->connect_error);
 		}
 		return $mysqli;
@@ -107,9 +132,16 @@ class MysqlCredentials implements JsonSerializable{
 	 *
 	 * @throws SqlError
 	 */
-	public function reconnectMysqli(mysqli &$mysqli) : void{
-		$mysqli->connect($this->host, $this->username, $this->password, $this->schema, $this->port, $this->socket);
-		if($mysqli->connect_error){
+	public function reconnectMysqli(mysqli &$mysqli): void {
+		$mysqli->connect(
+			$this->host,
+			$this->username,
+			$this->password,
+			$this->schema,
+			$this->port,
+			$this->socket
+		);
+		if ($mysqli->connect_error) {
 			throw new SqlError(SqlError::STAGE_CONNECT, $mysqli->connect_error);
 		}
 	}
@@ -119,7 +151,7 @@ class MysqlCredentials implements JsonSerializable{
 	 *
 	 * @return string
 	 */
-	public function __toString() : string{
+	public function __toString(): string {
 		return "$this->username@$this->host:$this->port/schema,$this->socket";
 	}
 
@@ -128,25 +160,25 @@ class MysqlCredentials implements JsonSerializable{
 	 *
 	 * @return array
 	 */
-	public function __debugInfo(){
+	public function __debugInfo() {
 		return [
-			"host" => $this->host,
-			"username" => $this->username,
-			"password" => str_repeat("*", strlen($this->password)),
-			"schema" => $this->schema,
-			"port" => $this->port,
-			"socket" => $this->socket
+			'host' => $this->host,
+			'username' => $this->username,
+			'password' => str_repeat('*', strlen($this->password)),
+			'schema' => $this->schema,
+			'port' => $this->port,
+			'socket' => $this->socket
 		];
 	}
 
-	public function jsonSerialize() : array{
+	public function jsonSerialize(): array {
 		return [
-			"host" => $this->host,
-			"username" => $this->username,
-			"password" => $this->password,
-			"schema" => $this->schema,
-			"port" => $this->port,
-			"socket" => $this->socket
+			'host' => $this->host,
+			'username' => $this->username,
+			'password' => $this->password,
+			'schema' => $this->schema,
+			'port' => $this->port,
+			'socket' => $this->socket
 		];
 	}
 }

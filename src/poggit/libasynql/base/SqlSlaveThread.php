@@ -34,7 +34,7 @@ use poggit\libasynql\SqlThread;
 use const PTHREADS_INHERIT_CONSTANTS;
 use const PTHREADS_INHERIT_INI;
 
-abstract class SqlSlaveThread extends Thread implements SqlThread{
+abstract class SqlSlaveThread extends Thread implements SqlThread {
 	/** @var SleeperNotifier */
 	private $notifier;
 
@@ -47,44 +47,58 @@ abstract class SqlSlaveThread extends Thread implements SqlThread{
 	protected $connError;
 	protected $busy = false;
 
-	protected function __construct(SleeperNotifier $notifier, QuerySendQueue $bufferSend = null, QueryRecvQueue $bufferRecv = null){
+	protected function __construct(
+		SleeperNotifier $notifier,
+		QuerySendQueue $bufferSend = null,
+		QueryRecvQueue $bufferRecv = null
+	) {
 		$this->notifier = $notifier;
 
 		$this->slaveNumber = self::$nextSlaveNumber++;
 		$this->bufferSend = $bufferSend ?? new QuerySendQueue();
 		$this->bufferRecv = $bufferRecv ?? new QueryRecvQueue();
 
-		if(!libasynql::isPackaged()){
+		if (!libasynql::isPackaged()) {
 			/** @noinspection PhpUndefinedMethodInspection */
 			/** @noinspection NullPointerExceptionInspection */
 			/** @var ClassLoader $cl */
-			$cl = Server::getInstance()->getPluginManager()->getPlugin("DEVirion")->getVirionClassLoader();
+			$cl = Server::getInstance()
+				->getPluginManager()
+				->getPlugin('DEVirion')
+				->getVirionClassLoader();
 			$this->setClassLoader($cl);
 		}
 		$this->start(PTHREADS_INHERIT_INI | PTHREADS_INHERIT_CONSTANTS);
 	}
 
-	public function onRun() : void{
+	public function onRun(): void {
 		$this->registerClassLoader();
 		$error = $this->createConn($resource);
 		$this->connCreated = true;
 		$this->connError = $error;
 
-		if($error !== null){
+		if ($error !== null) {
 			return;
 		}
 
-		while(true){
+		while (true) {
 			$row = $this->bufferSend->fetchQuery();
-			if(!is_string($row)){
+			if (!is_string($row)) {
 				break;
 			}
 			$this->busy = true;
-			[$queryId, $mode, $query, $params] = unserialize($row, ["allowed_classes" => true]);
-			try{
-				$result = $this->executeQuery($resource, $mode, $query, $params);
+			[$queryId, $mode, $query, $params] = unserialize($row, [
+				'allowed_classes' => true
+			]);
+			try {
+				$result = $this->executeQuery(
+					$resource,
+					$mode,
+					$query,
+					$params
+				);
 				$this->bufferRecv->publishResult($queryId, $result);
-			}catch(SqlError $error){
+			} catch (SqlError $error) {
 				$this->bufferRecv->publishError($queryId, $error);
 			}
 			$this->notifier->wakeupSleeper();
@@ -100,24 +114,31 @@ abstract class SqlSlaveThread extends Thread implements SqlThread{
 		return $this->busy;
 	}
 
-	public function stopRunning() : void{
+	public function stopRunning(): void {
 		$this->bufferSend->invalidate();
 
 		parent::quit();
 	}
 
-	public function quit(): void{
+	public function quit(): void {
 		$this->stopRunning();
 	}
 
-	public function addQuery(int $queryId, int $mode, string $query, array $params) : void{
+	public function addQuery(
+		int $queryId,
+		int $mode,
+		string $query,
+		array $params
+	): void {
 		$this->bufferSend->scheduleQuery($queryId, $mode, $query, $params);
 	}
 
-	public function readResults(array &$callbacks) : void{
-		while($this->bufferRecv->fetchResult($queryId, $result)){
-			if(!isset($callbacks[$queryId])){
-				throw new InvalidArgumentException("Missing handler for query #$queryId");
+	public function readResults(array &$callbacks): void {
+		while ($this->bufferRecv->fetchResult($queryId, $result)) {
+			if (!isset($callbacks[$queryId])) {
+				throw new InvalidArgumentException(
+					"Missing handler for query #$queryId"
+				);
 			}
 
 			$callbacks[$queryId]($result);
@@ -125,19 +146,19 @@ abstract class SqlSlaveThread extends Thread implements SqlThread{
 		}
 	}
 
-	public function connCreated() : bool{
+	public function connCreated(): bool {
 		return $this->connCreated;
 	}
 
-	public function hasConnError() : bool{
+	public function hasConnError(): bool {
 		return $this->connError !== null;
 	}
 
-	public function getConnError() : ?string{
+	public function getConnError(): ?string {
 		return $this->connError;
 	}
 
-	protected abstract function createConn(&$resource) : ?string;
+	abstract protected function createConn(&$resource): ?string;
 
 	/**
 	 * @param mixed   $resource
@@ -148,8 +169,12 @@ abstract class SqlSlaveThread extends Thread implements SqlThread{
 	 * @return SqlResult
 	 * @throws SqlError
 	 */
-	protected abstract function executeQuery($resource, int $mode, string $query, array $params) : SqlResult;
+	abstract protected function executeQuery(
+		$resource,
+		int $mode,
+		string $query,
+		array $params
+	): SqlResult;
 
-
-	protected abstract function close(&$resource) : void;
+	abstract protected function close(&$resource): void;
 }

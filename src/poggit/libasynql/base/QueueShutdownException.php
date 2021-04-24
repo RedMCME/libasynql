@@ -22,9 +22,7 @@ declare(strict_types=1);
 
 namespace poggit\libasynql\base;
 
-
 use RuntimeException;
 
-class QueueShutdownException extends RuntimeException{
-
+class QueueShutdownException extends RuntimeException {
 }

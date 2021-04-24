@@ -24,14 +24,14 @@ namespace poggit\libasynql\result;
 
 use poggit\libasynql\SqlResult;
 
-class SqlChangeResult extends SqlResult{
+class SqlChangeResult extends SqlResult {
 	private $affectedRows;
 
-	public function __construct(int $affectedRows){
+	public function __construct(int $affectedRows) {
 		$this->affectedRows = $affectedRows;
 	}
 
-	public function getAffectedRows() : int{
+	public function getAffectedRows(): int {
 		return $this->affectedRows;
 	}
 }

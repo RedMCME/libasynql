@@ -28,20 +28,20 @@ use poggit\libasynql\generic\GenericStatementFileParseException;
 /**
  * Represents a database connection or a group of database connections
  */
-interface DataConnector{
+interface DataConnector {
 	/**
 	 * Sets whether the queries are being logged. Only effective when libasynql is not packaged; does nothing if libasynql is packaged.
 	 *
 	 * @param bool $loggingQueries
 	 */
-	public function setLoggingQueries(bool $loggingQueries) : void;
+	public function setLoggingQueries(bool $loggingQueries): void;
 
 	/**
 	 * Returns whether the queries are being logged. Always returns false when libasynql is packaged.
 	 *
 	 * @return bool
 	 */
-	public function isLoggingQueries() : bool;
+	public function isLoggingQueries(): bool;
 
 	/**
 	 * Loads pre-formatted queries from a readable stream resource.
@@ -54,7 +54,7 @@ interface DataConnector{
 	 * @throws GenericStatementFileParseException if the file contains a syntax error or compile error
 	 * @throws InvalidArgumentException if the file introduces statements that duplicate the names of those previously loaded
 	 */
-	public function loadQueryFile($fh, string $fileName = null) : void;
+	public function loadQueryFile($fh, string $fileName = null): void;
 
 	/**
 	 * Loads a pre-formatted query.
@@ -63,7 +63,7 @@ interface DataConnector{
 	 *
 	 * @throws InvalidArgumentException if the statement duplicates the name of one previously loaded
 	 */
-	public function loadQuery(GenericStatement $stmt) : void;
+	public function loadQuery(GenericStatement $stmt): void;
 
 	/**
 	 * Executes a generic query that either succeeds or fails.
@@ -73,9 +73,19 @@ interface DataConnector{
 	 * @param callable|null $onSuccess an optional callback when the query has succeeded: <code>function() : void{}</code>
 	 * @param callable|null $onError   an optional callback when the query has failed: <code>function({@link SqlError} $error) : void{}</code>
 	 */
-	public function executeGeneric(string $queryName, array $args = [], ?callable $onSuccess = null, ?callable $onError = null) : void;
+	public function executeGeneric(
+		string $queryName,
+		array $args = [],
+		?callable $onSuccess = null,
+		?callable $onError = null
+	): void;
 
-	public function executeGenericRaw(string $query, array $args = [], ?callable $onSuccess = null, ?callable $onError = null) : void;
+	public function executeGenericRaw(
+		string $query,
+		array $args = [],
+		?callable $onSuccess = null,
+		?callable $onError = null
+	): void;
 
 	/**
 	 * Executes a query that changes data.
@@ -85,9 +95,19 @@ interface DataConnector{
 	 * @param callable|null $onSuccess an optional callback when the query has succeeded: <code>function(int $affectedRows) : void{}</code>
 	 * @param callable|null $onError   an optional callback when the query has failed: <code>function({@link SqlError} $error) : void{}</code>
 	 */
-	public function executeChange(string $queryName, array $args = [], ?callable $onSuccess = null, ?callable $onError = null) : void;
+	public function executeChange(
+		string $queryName,
+		array $args = [],
+		?callable $onSuccess = null,
+		?callable $onError = null
+	): void;
 
-	public function executeChangeRaw(string $query, array $args = [], ?callable $onSuccess = null, ?callable $onError = null) : void;
+	public function executeChangeRaw(
+		string $query,
+		array $args = [],
+		?callable $onSuccess = null,
+		?callable $onError = null
+	): void;
 
 	/**
 	 * Executes an insert query that results in an insert ID.
@@ -97,9 +117,19 @@ interface DataConnector{
 	 * @param callable|null $onInserted an optional callback when the query has succeeded: <code>function(int $insertId, int $affectedRows) : void{}</code>
 	 * @param callable|null $onError    an optional callback when the query has failed: <code>function({@link SqlError} $error) : void{}</code>
 	 */
-	public function executeInsert(string $queryName, array $args = [], ?callable $onInserted = null, ?callable $onError = null) : void;
+	public function executeInsert(
+		string $queryName,
+		array $args = [],
+		?callable $onInserted = null,
+		?callable $onError = null
+	): void;
 
-	public function executeInsertRaw(string $query, array $args = [], ?callable $onInserted = null, ?callable $onError = null) : void;
+	public function executeInsertRaw(
+		string $query,
+		array $args = [],
+		?callable $onInserted = null,
+		?callable $onError = null
+	): void;
 
 	/**
 	 * Executes a select query that returns an SQL result set. This does not strictly need to be SELECT queries -- reflection queries like MySQL's <code>SHOW TABLES</code> query are also allowed.
@@ -109,19 +139,29 @@ interface DataConnector{
 	 * @param callable|null $onSelect  an optional callback when the query has succeeded: <code>function(array[] $rows, {@link SqlColumnInfo} $columns) : void{}</code>
 	 * @param callable|null $onError   an optional callback when the query has failed: <code>function({@link SqlError} $error) : void{}</code>
 	 */
-	public function executeSelect(string $queryName, array $args = [], ?callable $onSelect = null, ?callable $onError = null) : void;
+	public function executeSelect(
+		string $queryName,
+		array $args = [],
+		?callable $onSelect = null,
+		?callable $onError = null
+	): void;
 
-	public function executeSelectRaw(string $query, array $args = [], ?callable $onSelect = null, ?callable $onError = null) : void;
+	public function executeSelectRaw(
+		string $query,
+		array $args = [],
+		?callable $onSelect = null,
+		?callable $onError = null
+	): void;
 
 	/**
 	 * This function waits all pending queries to complete then returns. This is as if the queries were executed in blocking mode (not async).
 	 *
 	 * This method should only under very rare events like server start/stop. This should not be run trivially (e.g. every time player joins), because otherwise this is not async.
 	 */
-	public function waitAll() : void;
+	public function waitAll(): void;
 
 	/**
 	 * Closes the connection and/or all child connections. Remember to call this method when the plugin is disabled or the data provider is switched.
 	 */
-	public function close() : void;
+	public function close(): void;
 }

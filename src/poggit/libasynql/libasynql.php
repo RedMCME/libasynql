@@ -43,23 +43,24 @@ use function usleep;
 /**
  * An utility class providing convenient access to the API
  */
-final class libasynql{
+final class libasynql {
 	/** @var bool */
 	private static $packaged;
 
-	public static function isPackaged() : bool{
+	public static function isPackaged(): bool {
 		return self::$packaged;
 	}
 
-	public static function detectPackaged() : void{
+	public static function detectPackaged(): void {
 		self::$packaged = __CLASS__ !== 'poggit\libasynql\libasynql';
 
-		if(!self::$packaged && defined("pocketmine\\VERSION")){
-			echo Terminal::$COLOR_YELLOW . "Warning: Use of unshaded libasynql detected. Debug mode is enabled. This may lead to major performance drop. Please use a shaded package in production. See https://poggit.pmmp.io/virion for more information.\n";
+		if (!self::$packaged && defined('pocketmine\\VERSION')) {
+			echo Terminal::$COLOR_YELLOW .
+				"Warning: Use of unshaded libasynql detected. Debug mode is enabled. This may lead to major performance drop. Please use a shaded package in production. See https://poggit.pmmp.io/virion for more information.\n";
 		}
 	}
 
-	private function __construct(){
+	private function __construct() {
 	}
 
 	/**
@@ -72,89 +73,118 @@ final class libasynql{
 	 * @return DataConnector
 	 * @throws SqlError if the connection could not be created
 	 */
-	public static function create(Plugin $plugin, $configData, array $sqlMap, bool $logQueries = null) : DataConnector{
-		if(!is_array($configData)){
-			throw new ConfigException("Database settings are missing or incorrect");
+	public static function create(
+		Plugin $plugin,
+		$configData,
+		array $sqlMap,
+		bool $logQueries = null
+	): DataConnector {
+		if (!is_array($configData)) {
+			throw new ConfigException(
+				'Database settings are missing or incorrect'
+			);
 		}
 
-		$type = (string) $configData["type"];
-		if($type === ""){
-			throw new ConfigException("Database type is missing");
+		$type = (string) $configData['type'];
+		if ($type === '') {
+			throw new ConfigException('Database type is missing');
 		}
 
-		if(count($sqlMap) === 0){
-			throw new InvalidArgumentCountException('Parameter $sqlMap cannot be empty');
+		if (count($sqlMap) === 0) {
+			throw new InvalidArgumentCountException(
+				'Parameter $sqlMap cannot be empty'
+			);
 		}
 
-		$pdo = ($configData["prefer-pdo"] ?? false) && extension_loaded("pdo");
+		$pdo = ($configData['prefer-pdo'] ?? false) && extension_loaded('pdo');
 
 		$dialect = null;
 		$placeHolder = null;
-		switch(strtolower($type)){
-			case "sqlite":
-			case "sqlite3":
-			case "sq3":
-				if(!$pdo && !extension_loaded("sqlite3")){
-					throw new ExtensionMissingException("sqlite3");
+		switch (strtolower($type)) {
+			case 'sqlite':
+			case 'sqlite3':
+			case 'sq3':
+				if (!$pdo && !extension_loaded('sqlite3')) {
+					throw new ExtensionMissingException('sqlite3');
 				}
 
-				$fileName = self::resolvePath($plugin->getDataFolder(), $configData["sqlite"]["file"] ?? "data.sqlite");
-				if($pdo){
+				$fileName = self::resolvePath(
+					$plugin->getDataFolder(),
+					$configData['sqlite']['file'] ?? 'data.sqlite'
+				);
+				if ($pdo) {
 					// TODO add PDO support
-				}else{
+				} else {
 					$factory = Sqlite3Thread::createFactory($fileName);
 				}
-				$dialect = "sqlite";
+				$dialect = 'sqlite';
 				break;
-			case "mysql":
-			case "mysqli":
-				if(!$pdo && !extension_loaded("mysqli")){
-					throw new ExtensionMissingException("mysqli");
+			case 'mysql':
+			case 'mysqli':
+				if (!$pdo && !extension_loaded('mysqli')) {
+					throw new ExtensionMissingException('mysqli');
 				}
 
-				if(!isset($configData["mysql"])){
-					throw new ConfigException("Missing MySQL settings");
+				if (!isset($configData['mysql'])) {
+					throw new ConfigException('Missing MySQL settings');
 				}
 
-				$cred = MysqlCredentials::fromArray($configData["mysql"], strtolower($plugin->getName()));
+				$cred = MysqlCredentials::fromArray(
+					$configData['mysql'],
+					strtolower($plugin->getName())
+				);
 
-				if($pdo){
+				if ($pdo) {
 					// TODO add PDO support
-				}else{
+				} else {
 					$factory = MysqliThread::createFactory($cred);
-					$placeHolder = "?";
+					$placeHolder = '?';
 				}
-				$dialect = "mysql";
+				$dialect = 'mysql';
 
 				break;
 		}
 
-		if(!isset($dialect, $factory, $sqlMap[$dialect])){
-			throw new ConfigException("Unsupported database type \"$type\". Try \"" . implode("\" or \"", array_keys($sqlMap)) . "\".");
+		if (!isset($dialect, $factory, $sqlMap[$dialect])) {
+			throw new ConfigException(
+				"Unsupported database type \"$type\". Try \"" .
+					implode("\" or \"", array_keys($sqlMap)) .
+					"\"."
+			);
 		}
 
-		$pool = new SqlThreadPool($factory, $configData["worker-limit"] ?? 1);
-		while(!$pool->connCreated()){
+		$pool = new SqlThreadPool($factory, $configData['worker-limit'] ?? 1);
+		while (!$pool->connCreated()) {
 			usleep(1000);
 		}
-		if($pool->hasConnError()){
+		if ($pool->hasConnError()) {
 			throw new SqlError(SqlError::STAGE_CONNECT, $pool->getConnError());
 		}
 
-		$connector = new DataConnectorImpl($plugin, $pool, $placeHolder, $logQueries ?? !libasynql::isPackaged());
-		foreach(is_string($sqlMap[$dialect]) ? [$sqlMap[$dialect]] : $sqlMap[$dialect] as $file){
+		$connector = new DataConnectorImpl(
+			$plugin,
+			$pool,
+			$placeHolder,
+			$logQueries ?? !libasynql::isPackaged()
+		);
+		foreach (
+			is_string($sqlMap[$dialect])
+				? [$sqlMap[$dialect]]
+				: $sqlMap[$dialect]
+			as $file
+		) {
 			$connector->loadQueryFile($plugin->getResource($file), $file);
 		}
-		
+
 		return $connector;
 	}
 
-	private static function resolvePath(string $folder, string $path) : string{
-		if($path[0] === "/"){
+	private static function resolvePath(string $folder, string $path): string {
+		if ($path[0] === '/') {
 			return $path;
 		}
-		if(Utils::getOS() === "win"){
-			if($path[0] === "\\" || $path[1] === ":"){
+		if (Utils::getOS() === 'win') {
+			if ($path[0] === '\\' || $path[1] === ':') {
 				return $path;
 			}
 		}
@@ -165,8 +195,7 @@ final class libasynql{
 /**
  * An empty function accepting void parameters and returning void. Can be used as a dummy function.
  */
-function nop() : void{
-
+function nop(): void {
 }
 
 libasynql::detectPackaged();

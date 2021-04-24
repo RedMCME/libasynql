@@ -37,36 +37,46 @@ use function sprintf;
 /**
  * Represents a generic error when executing a SQL statement.
  */
-class SqlError extends RuntimeException{
+class SqlError extends RuntimeException {
 	/**
 	 * Returned by {@link SqlError::getStage() getStage()}, indicating that an error occurred while connecting to the database
 	 */
-	public const STAGE_CONNECT = "CONNECT";
+	public const STAGE_CONNECT = 'CONNECT';
 	/**
 	 * Returned by {@link SqlError::getStage() getStage()}, indicating that an error occurred while preparing the query
 	 */
-	public const STAGE_PREPARE = "PREPARE";
+	public const STAGE_PREPARE = 'PREPARE';
 	/**
 	 * Returned by {@link SqlError::getStage() getStage()}, indicating that an error occurred while the SQL backend is executing the query
 	 */
-	public const STAGE_EXECUTE = "EXECUTION";
+	public const STAGE_EXECUTE = 'EXECUTION';
 	/**
 	 * Returned by {@link SqlError::getStage() getStage()}, indicating that an error occurred while handling the response of the query
 	 */
-	public const STAGE_RESPONSE = "RESPONSE";
+	public const STAGE_RESPONSE = 'RESPONSE';
 
 	private $stage;
 	private $errorMessage;
 	private $query;
 	private $args;
 
-	public function __construct(string $stage, string $errorMessage, string $query = null, array $args = null){
+	public function __construct(
+		string $stage,
+		string $errorMessage,
+		string $query = null,
+		array $args = null
+	) {
 		$this->stage = $stage;
 		$this->errorMessage = $errorMessage;
 		$this->query = $query;
 		$this->args = $args;
 
-		parent::__construct("SQL $stage error: $errorMessage" . ($query === null ? "" : (", for query $query | " . json_encode($args))));
+		parent::__construct(
+			"SQL $stage error: $errorMessage" .
+				($query === null
+					? ''
+					: ", for query $query | " . json_encode($args))
+		);
 		$this->flattenTrace();
 	}
 
@@ -75,7 +85,7 @@ class SqlError extends RuntimeException{
 	 *
 	 * @return string
 	 */
-	public function getStage() : string{
+	public function getStage(): string {
 		return $this->stage;
 	}
 
@@ -84,7 +94,7 @@ class SqlError extends RuntimeException{
 	 *
 	 * @return string
 	 */
-	public function getErrorMessage() : string{
+	public function getErrorMessage(): string {
 		return $this->errorMessage;
 	}
 
@@ -93,7 +103,7 @@ class SqlError extends RuntimeException{
 	 *
 	 * @return string|null
 	 */
-	public function getQuery() : ?string{
+	public function getQuery(): ?string {
 		return $this->query;
 	}
 
@@ -102,7 +112,7 @@ class SqlError extends RuntimeException{
 	 *
 	 * @return mixed[]|null
 	 */
-	public function getArgs() : ?array{
+	public function getArgs(): ?array {
 		return $this->args;
 	}
 
@@ -111,31 +121,33 @@ class SqlError extends RuntimeException{
 	 *
 	 * @see https://gist.github.com/Thinkscape/805ba8b91cdce6bcaf7c Exception flattening solution by Artur Bodera
 	 */
-	protected function flattenTrace() : void{
-		$traceProperty = (new ReflectionClass(Exception::class))->getProperty('trace');
+	protected function flattenTrace(): void {
+		$traceProperty = (new ReflectionClass(Exception::class))->getProperty(
+			'trace'
+		);
 		$traceProperty->setAccessible(true);
-		$flatten = function(&$value){
-			if($value instanceof Closure){
+		$flatten = function (&$value) {
+			if ($value instanceof Closure) {
 				$closureReflection = new ReflectionFunction($value);
 				$value = sprintf(
 					'(Closure at %s:%s)',
 					$closureReflection->getFileName(),
 					$closureReflection->getStartLine()
 				);
-			}elseif(is_object($value)){
+			} elseif (is_object($value)) {
 				$value = sprintf('object(%s)', get_class($value));
-			}elseif(is_resource($value)){
+			} elseif (is_resource($value)) {
 				$value = sprintf('resource(%s)', get_resource_type($value));
 			}
 		};
-		do{
+		do {
 			$trace = $traceProperty->getValue($this);
-			foreach($trace as &$call){
+			foreach ($trace as &$call) {
 				array_walk_recursive($call['args'], $flatten);
 			}
 			unset($call);
 			$traceProperty->setValue($this, $trace);
-		}while($exception = $this->getPrevious());
+		} while ($exception = $this->getPrevious());
 		$traceProperty->setAccessible(false);
 	}
 }

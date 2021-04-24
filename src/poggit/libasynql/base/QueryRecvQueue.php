@@ -29,19 +29,21 @@ use function is_string;
 use function serialize;
 use function unserialize;
 
-class QueryRecvQueue extends Threaded{
-	public function publishResult(int $queryId, SqlResult $result) : void{
+class QueryRecvQueue extends Threaded {
+	public function publishResult(int $queryId, SqlResult $result): void {
 		$this[] = serialize([$queryId, $result]);
 	}
 
-	public function publishError(int $queryId, SqlError $error){
+	public function publishError(int $queryId, SqlError $error) {
 		$this[] = serialize([$queryId, $error]);
 	}
 
-	public function fetchResult(&$queryId, &$result) : bool{
+	public function fetchResult(&$queryId, &$result): bool {
 		$row = $this->shift();
-		if(is_string($row)){
-			[$queryId, $result] = unserialize($row, ["allowed_classes" => true]);
+		if (is_string($row)) {
+			[$queryId, $result] = unserialize($row, [
+				'allowed_classes' => true
+			]);
 			return true;
 		}
 		return false;
