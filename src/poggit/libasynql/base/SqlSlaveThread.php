@@ -66,13 +66,12 @@ abstract class SqlSlaveThread extends Thread implements SqlThread {
 				->getPluginManager()
 				->getPlugin('DEVirion')
 				->getVirionClassLoader();
-			$this->setClassLoader($cl);
+			$this->setClassLoaders([Server::getInstance()->getLoader(), $cl]);
 		}
 		$this->start(PTHREADS_INHERIT_INI | PTHREADS_INHERIT_CONSTANTS);
 	}
 
 	public function onRun(): void {
-		$this->registerClassLoader();
 		$error = $this->createConn($resource);
 		$this->connCreated = true;
 		$this->connError = $error;
